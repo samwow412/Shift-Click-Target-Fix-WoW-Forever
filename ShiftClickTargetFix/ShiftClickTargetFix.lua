@@ -66,6 +66,12 @@ local UNIT_FRAME_NAME_PATTERNS = {
     "^ArenaPrepFrame%d+$",
     "^PartyFrameMemberFrame%d+$",
     "^PartyMemberFrame%d+$", -- Classic-style party frames
+    -- Party pet frames (raid-style, Classic-style and retail party frame)
+    "^CompactPartyFramePet%d+$",
+    "^CompactRaidFramePet%d+$",
+    "^PartyMemberFrame%dPetFrame$",
+    "^PartyFrameMemberFrame%dPetFrame$",
+    "^PartyMemberFramePetFrame%d+$",
 }
 
 local function LoadDB()
@@ -399,6 +405,12 @@ local function ApplyPartyFrames()
     for i = 1, 5 do
         TryGlobal("CompactPartyFrameMember" .. i)
         TryGlobal("PartyMemberFrame" .. i)
+        -- pets
+        TryGlobal("CompactPartyFramePet" .. i)
+        TryGlobal("CompactRaidFramePet" .. i)
+        TryGlobal("PartyMemberFrame" .. i .. "PetFrame")
+        TryGlobal("PartyFrameMemberFrame" .. i .. "PetFrame")
+        TryGlobal("PartyMemberFramePetFrame" .. i)
     end
 
     local party = _G.PartyFrame
@@ -408,6 +420,9 @@ local function ApplyPartyFrames()
             local member = party["MemberFrame" .. i]
             if member then
                 AttachTargetFix(member)
+                if member.PetFrame then
+                    AttachTargetFix(member.PetFrame)
+                end
             end
         end
     end
@@ -596,6 +611,9 @@ eventFrame:RegisterEvent("PLAYER_LOGIN")
 eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
 eventFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
+eventFrame:RegisterEvent("UNIT_PET")
+
+local petApplyQueued = false
 
 eventFrame:SetScript("OnEvent", function(_, event)
     if event == "PLAYER_REGEN_ENABLED" then
@@ -603,6 +621,28 @@ eventFrame:SetScript("OnEvent", function(_, event)
             pendingApply = false
             C_Timer.After(0, function() RunFix(true) end)
         end
+        return
+    end
+
+    if event == "UNIT_PET" then
+        -- Pet frames can be created/shown late; re-scan once (throttled).
+        if petApplyQueued then
+            return
+        end
+        if InCombatLockdown() then
+            pendingApply = true
+            return
+        end
+        petApplyQueued = true
+        C_Timer.After(0.3, function()
+            petApplyQueued = false
+            if not InCombatLockdown() then
+                ApplyPartyFrames()
+                ApplyToClickCastFrames()
+            else
+                pendingApply = true
+            end
+        end)
         return
     end
 
@@ -827,7 +867,7 @@ local function CreateSettingsFrame()
 
     local ver = configFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     ver:SetPoint("BOTTOMRIGHT", -10, 6)
-    ver:SetText("v1.8.1-forever")
+    ver:SetText("v1.9.0-forever")
     ver:SetTextColor(0.5, 0.5, 0.5)
 end
 
