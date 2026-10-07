@@ -1,0 +1,8 @@
+## Interface: 11508, 11509, 16001, 20505, 20506, 30405, 38002, 40402, 50503, 50504, 120100, 120105, 120007
+## Title: ShiftClickTargetFix
+## SavedVariables: ShiftClickTargetFixDB
+## Notes: Restores Shift/Ctrl/Alt + Left-Click targeting on unit frames. Per-key toggles; enabled keys override other click-cast addons. Does not modify nameplates. /shiftfix
+## Version: 1.8.1
+## Author: ccars
+
+ShiftClickTargetFix.lua
